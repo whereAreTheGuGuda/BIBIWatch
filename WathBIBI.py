@@ -1,8 +1,12 @@
 #coding = utf-8
-
+from requests_html import HTMLSession
+from requests_html import HTML
 import requests,json
 import re
 import time
+import webbrowser
+session = HTMLSession()
+
 header = {
         'authority' : 'bscscan.com',
         'accept': 'text/html',
@@ -24,7 +28,16 @@ class WatchBIBI:
     
     @classmethod
     def checkAddress(self,wallet):
-        url = 'https://bscscan.com/token/generic-tokentxns2?m=normal&contractAddress=' + wallet
+        
+        url = 'https://bscscan.com/token/generic-tokentxns2?m=normal&contractAddress=' + wallet +'&a=0xbe77ecd16216bff4ed60b78c3a2549ab18e82463&sid=9978ec849b82d740b6fd498f16e78833&p=1'
+        # url = 'https://bscscan.com/token/' + wallet +'?a=0xbe77ecd16216bff4ed60b78c3a2549ab18e82463'
+        r = requests.get(url= url,headers=header)
+        print(r.content)
+        html = HTML(html=r.content)
+        html.render(wait=3)
+        print(html.html) 
+
+        return
         walletResp = requests.get(url=url,headers=header)
         print(walletResp.status_code)
         print(walletResp.content)
@@ -83,7 +96,7 @@ class WatchBIBI:
         print(talk.status_code)
         print(talk.content)
 if __name__ == '__main__':
-    WatchBIBI.checkAddress('0xbe77ecd16216bff4ed60b78c3a2549ab18e82463')
+    WatchBIBI.checkAddress('0x8f00a4ed0a2c8e308a1d516c436c90bcaf7f1cd2')
     # WatchBIBI.posttelegram('PYTHON SEND TEST')
 
     # curl -X POST “https://api.telegram.org/bot<包括尖括号替换成机器人的token>/sendMessage" -d "chat_id=<目标的id，一串数字，群id比个人id的前边多了-号>&text=消息消息消息消息消息"
