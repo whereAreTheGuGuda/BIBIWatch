@@ -48,17 +48,18 @@ class WatchBIBI:
             m_end, s_end = divmod(datetime_stamp, 60)
             h_end, m_end = divmod(m_end, 60)
             print("地址上次交易时间在 " + "%02d小时:%02d分:%02d前" % (h_end, m_end, s_end))
-            if datetime_stamp < 60 * 20:
+            if datetime_stamp < 60 * 60:
                 # 报警
                 address_url = (
-                    "https://bscscan.com/token/"
+                    "https://bscscan.com/token/0xfe8bf5b8f5e4eb5f9bc2be16303f7dab8cf56aa8?a="
                     + wallet
-                    + "?a=0xbe77ecd16216bff4ed60b78c3a2549ab18e82463#tokenInfo"
                 )
                 WatchBIBI.posttelegram(
                     "警告！！！ BIBI账户地址："
                     + wallet
-                    + " 在 %02d小时:%02d分:%02d前发生了交易行为, \n 请访问 "
+                    + " 在 "
+                    + "%02d小时:%02d分:%02d前" % (h_end, m_end, s_end)
+                    + "发生了交易行为, \n 请访问 "
                     + address_url
                     + " 关注"
                 )
