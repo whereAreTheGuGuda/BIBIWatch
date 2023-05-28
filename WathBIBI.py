@@ -1,11 +1,8 @@
 #coding = utf-8
-from requests_html import HTMLSession
-from requests_html import HTML
-import requests,json
+from datetime import datetime
+import requests
 import re
 import time
-import webbrowser
-session = HTMLSession()
 
 header = {
         'authority' : 'bscscan.com',
@@ -19,7 +16,7 @@ class WatchBIBI:
 
     @classmethod
     def checkError(self,html:str):
-        return len(html.split('We encountered an unexpected error')) > 0
+        return len(html.split('We encountered an unexpected error')) > 1
     
     @classmethod
     def subString(self,rule,template):
@@ -30,24 +27,24 @@ class WatchBIBI:
     def checkAddress(self,wallet):
         
         url = 'https://bscscan.com/token/generic-tokentxns2?m=normal&contractAddress=' + wallet +'&a=0xbe77ecd16216bff4ed60b78c3a2549ab18e82463&sid=9978ec849b82d740b6fd498f16e78833&p=1'
-        # url = 'https://bscscan.com/token/' + wallet +'?a=0xbe77ecd16216bff4ed60b78c3a2549ab18e82463'
-        r = requests.get(url= url,headers=header)
-        print(r.content)
-        html = HTML(html=r.content)
-        html.render(wait=3)
-        print(html.html) 
-
-        return
         walletResp = requests.get(url=url,headers=header)
-        print(walletResp.status_code)
-        print(walletResp.content)
+        print(url)
         wallet_html = str(walletResp.content)
         if (not walletResp.status_code == 200) or WatchBIBI.checkError(wallet_html) :
             # 请求过于频繁 需要等待
-            time.sleep(60 * 5)
-            WatchBIBI.checkAddress(wallet)
-        times = WatchBIBI.subString(' title=(.*?)>',wallet_html)
-        print(times)
+            # time.sleep(60 * 5)
+            return
+            # WatchBIBI.checkAddress(wallet)
+        arr = WatchBIBI.subString('title=(.*?)ago',wallet_html)
+        if len(arr) == 0:
+            return
+        times : str = WatchBIBI.subString('title=(.*?)ago',wallet_html)[1]
+        date : str = times.split('\'')[1]
+        date = date[:-1]
+        change = (datetime.now() - datetime.strptime(date, '%Y-%m-%d %H:%M:%S')).total_seconds()
+        if change < 4 * 3600:
+            WatchBIBI.posttelegram('警告 ！！！ 地址：' + wallet + '在' + str(change) + '秒前进行交易 详情请查看' + '\n https://bscscan.com/token/' + wallet + '?a=0xbe77ecd16216bff4ed60b78c3a2549ab18e82463')
+        print('check success ' + str(change))
             # array = html.split('</a></span></td><td>')
             # for i in range(len(array)):
                 # value1 = array[i].split('</td><td>')[0]
@@ -56,7 +53,6 @@ class WatchBIBI:
     @classmethod
     def watchBIBI(self):
         resp = requests.get(url='https://bscscan.com/token/generic-tokenholders2?a=0xfe8bf5b8f5e4eb5f9bc2be16303f7dab8cf56aa8&sid=&m=normal&s=4206900000000000000000000000000000&p=1',headers=header)
-        print(resp.content)
         html = str(resp.content)
         if WatchBIBI.checkError(html):
             time.sleep(5 * 60)
@@ -70,20 +66,20 @@ class WatchBIBI:
             add = []
             for i in range(len(holders)):
                 value :str = holders[i]
-                # hold = float(''.join(value.split(',')))
-                # if hold > 10000000000000:
-                key : str = address[i]
-                if key.startswith('0x'):
-                    wallet = key.split('?a=')[1].split('#tokenAnalytics')[0]
-                    if not wallet.endswith('\\'):
-                        if not wallet == '0xbabfb8eac3d264e5e55a22f7bd83e73aa3227e9f' and not wallet == '0x000000000000000000000000000000000000dead' and not wallet == '0xf05bcb4e3f6a015c4d961c413f7b72efdbb31eab':
-                            add.append(wallet)
+                hold = float(''.join(value.split(',')))
+                if hold > 10000000000000:
+                    key : str = address[i]
+                    if key.startswith('0x'):
+                        wallet = key.split('?a=')[1].split('#tokenAnalytics')[0]
+                        if not wallet.endswith('\\'):
+                            if not wallet == '0xbabfb8eac3d264e5e55a22f7bd83e73aa3227e9f' and not wallet == '0x000000000000000000000000000000000000dead' and not wallet == '0xf05bcb4e3f6a015c4d961c413f7b72efdbb31eab':
+                                add.append(wallet)
 
-            print(add)
-            # for i in range(len(add)):
-            for i in range(1):
+            for i in range(len(add)):
+            # for i in range(1):
                 wallet = add[i]
                 WatchBIBI.checkAddress(wallet)
+        time.sleep(10 * 60)
 
     @classmethod
     def posttelegram(self,message):
@@ -93,10 +89,9 @@ class WatchBIBI:
             'text' : message
         }
         talk = requests.post(url=url,params=param)
-        print(talk.status_code)
-        print(talk.content)
-if __name__ == '__main__':
-    WatchBIBI.checkAddress('0x8f00a4ed0a2c8e308a1d516c436c90bcaf7f1cd2')
-    # WatchBIBI.posttelegram('PYTHON SEND TEST')
 
+if __name__ == '__main__':
+    # WatchBIBI.checkAddress('0xfe8bf5b8f5e4eb5f9bc2be16303f7dab8cf56aa8')
+    # WatchBIBI.posttelegram('PYTHON SEND TEST')
+    WatchBIBI.watchBIBI()
     # curl -X POST “https://api.telegram.org/bot<包括尖括号替换成机器人的token>/sendMessage" -d "chat_id=<目标的id，一串数字，群id比个人id的前边多了-号>&text=消息消息消息消息消息"
